@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 )
 
@@ -92,9 +93,7 @@ func readInput() (seeds []int, mappings []Mappings) {
 	return
 }
 
-func main() {
-	seeds, mappings := readInput()
-
+func part1(seeds []int, mappings []Mappings) {
 	frontier := seeds
 	for _, mapping := range mappings {
 		var newFrontier []int
@@ -105,4 +104,45 @@ func main() {
 		frontier = newFrontier
 	}
 	fmt.Println(min(frontier))
+}
+
+func part2(seeds []int, mappings []Mappings) {
+	var wg sync.WaitGroup
+	resultChan := make(chan int, len(seeds)/2)
+	for i := 0; i < len(seeds); i += 2 {
+		wg.Add(1)
+		go func(ix int) {
+			defer wg.Done()
+			seed := seeds[ix]
+			cnt := seeds[ix+1]
+			minVal := 1 << 32
+			for j := 0; j < cnt; j++ {
+				cur := seed + j
+				for _, mp := range mappings {
+					cur = applyMappings(cur, mp)
+				}
+				if cur < minVal {
+					minVal = cur
+				}
+			}
+			resultChan <- minVal
+		}(i)
+	}
+
+	wg.Wait()
+	close(resultChan)
+
+	minVal := 1 << 32
+	for res := range resultChan {
+		if res < minVal {
+			minVal = res
+		}
+	}
+	fmt.Println(minVal)
+}
+
+func main() {
+	seeds, mappings := readInput()
+	part1(seeds, mappings)
+	part2(seeds, mappings)
 }
