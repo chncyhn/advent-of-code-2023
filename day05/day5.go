@@ -56,16 +56,22 @@ func min(vals []int) int {
 	return m
 }
 
-func main() {
+func applyMappings(input int, mappings Mappings) int {
+	for _, mp := range mappings.mappings {
+		output := apply(mp, input)
+		if output != -1 {
+			return output
+		}
+	}
+	return input
+}
+
+func readInput() (seeds []int, mappings []Mappings) {
 	file, _ := os.Open("full.txt")
 	scanner := bufio.NewScanner(file)
-
 	scanner.Scan()
-	seeds := mapToInt(strings.Split(strings.Replace(scanner.Text(), "seeds: ", "", 1), " "))
+	seeds = mapToInt(strings.Split(strings.Replace(scanner.Text(), "seeds: ", "", 1), " "))
 	scanner.Scan()
-
-	var mappings []Mappings
-
 	sd := SourceDest{"", ""}
 	for scanner.Scan() {
 		str := scanner.Text()
@@ -83,26 +89,20 @@ func main() {
 			mappings[len(mappings)-1].mappings = append(mappings[len(mappings)-1].mappings, mp)
 		}
 	}
+	return
+}
+
+func main() {
+	seeds, mappings := readInput()
 
 	frontier := seeds
 	for _, mapping := range mappings {
 		var newFrontier []int
 		for _, input := range frontier {
-			mapped := false
-			for _, mp := range mapping.mappings {
-				output := apply(mp, input)
-				if output != -1 {
-					newFrontier = append(newFrontier, output)
-					mapped = true
-					break
-				}
-			}
-			if !mapped {
-				newFrontier = append(newFrontier, input)
-			}
+			output := applyMappings(input, mapping)
+			newFrontier = append(newFrontier, output)
 		}
 		frontier = newFrontier
 	}
-
 	fmt.Println(min(frontier))
 }
